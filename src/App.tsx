@@ -5,7 +5,7 @@ import {
   type WordEntry, type FormsMap
 } from './db';
 import {
-  Search, Book, AlertCircle, Loader2, ArrowRight,
+  Search, AlertCircle, Loader2, ArrowRight,
   Heart, Clock, Volume2
 } from 'lucide-react';
 
@@ -167,8 +167,14 @@ function App() {
         {/* Header */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary text-primary-content rounded-xl shadow-lg shadow-primary/20">
-              <Book size={24} />
+            <div className="w-11 h-11 rounded-xl shadow-lg shadow-primary/20 overflow-hidden">
+              <svg viewBox="0 0 128 128" className="w-full h-full">
+                <rect width="128" height="128" rx="24" fill="#111827" />
+                <g transform="translate(7,0)">
+                  <path d="M38 88V86h4V42h-4V40h24c12 0 20 8 20 18s-7 17-17 18l18 12H69L55 76H54v10h4v2H38zM54 66h10c6 0 10-4 10-10s-4-8-10-8H54v18z" fill="#ffffff" fillRule="evenodd"/>
+                  <circle cx="32" cy="96" r="16" fill="#79be15" stroke="#111827" strokeWidth="4" />
+                </g>
+              </svg>
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-base-content">Slovenian Dictionary</h1>

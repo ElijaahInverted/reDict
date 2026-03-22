@@ -33,3 +33,4 @@ test-data/analysis.json
 
 # Claude Code
 .claude/
+.vercel
