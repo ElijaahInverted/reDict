@@ -92,6 +92,11 @@ function App() {
     const q = query.toLowerCase().trim();
     if (q.length < 1) return [];
 
+    // Strip diacritics: ž→z, š→s, č→c, etc.
+    const strip = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const qStripped = strip(q);
+    const hasDiacritics = q !== qStripped;
+
     const results: SearchResult[] = [];
     const seen = new Set<string>();
 
@@ -114,7 +119,7 @@ function App() {
       }
     }
 
-    // 3. Prefix match
+    // 3. Prefix match (exact diacritics first, then stripped)
     for (const entry of dictionary) {
       if (results.length >= 50) break;
       const w = entry.word.toLowerCase();
@@ -124,12 +129,24 @@ function App() {
       }
     }
 
+    // 3b. Diacritics-insensitive prefix match
+    if (hasDiacritics === false && results.length < 50) {
+      for (const entry of dictionary) {
+        if (results.length >= 50) break;
+        const w = entry.word.toLowerCase();
+        if (!seen.has(w) && strip(w).startsWith(qStripped)) {
+          seen.add(w);
+          results.push({ entry });
+        }
+      }
+    }
+
     // 4. Substring match
     if (results.length < 50 && q.length >= 2) {
       for (const entry of dictionary) {
         if (results.length >= 50) break;
         const w = entry.word.toLowerCase();
-        if (!seen.has(w) && w.includes(q)) {
+        if (!seen.has(w) && (w.includes(q) || strip(w).includes(qStripped))) {
           seen.add(w);
           results.push({ entry });
         }
