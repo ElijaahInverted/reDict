@@ -43,7 +43,7 @@ describe('App', () => {
   it('shows search input after loading', async () => {
     render(<App />);
     const input = await screen.findByPlaceholderText(
-      'Search for a Slovenian word...'
+      'Search Slovenian...'
     );
     expect(input).toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe('App', () => {
   it('shows results matching the query', async () => {
     render(<App />);
     const input = await screen.findByPlaceholderText(
-      'Search for a Slovenian word...'
+      'Search Slovenian...'
     );
     await userEvent.type(input, 'hiš');
 
@@ -62,7 +62,7 @@ describe('App', () => {
   it('resolves inflected form to lemma', async () => {
     render(<App />);
     const input = await screen.findByPlaceholderText(
-      'Search for a Slovenian word...'
+      'Search Slovenian...'
     );
     await userEvent.type(input, 'govoril');
 
@@ -76,7 +76,7 @@ describe('App', () => {
   it('shows no results message for unmatched query', async () => {
     render(<App />);
     const input = await screen.findByPlaceholderText(
-      'Search for a Slovenian word...'
+      'Search Slovenian...'
     );
     await userEvent.type(input, 'zzzzz');
     expect(screen.getByText(/no results found/i)).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('App', () => {
   it('displays definitions when present', async () => {
     render(<App />);
     const input = await screen.findByPlaceholderText(
-      'Search for a Slovenian word...'
+      'Search Slovenian...'
     );
     await userEvent.type(input, 'knjiga');
     expect(screen.getByText('book')).toBeInTheDocument();

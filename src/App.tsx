@@ -161,13 +161,13 @@ function App() {
   }, [history, dictIndex]);
 
   return (
-    <div className="min-h-screen p-4 md:p-8 flex justify-center">
-      <div className="w-full max-w-2xl flex flex-col gap-5">
+    <div className="min-h-screen p-2 sm:p-4 md:p-8 flex justify-center">
+      <div className="w-full max-w-2xl flex flex-col gap-3 sm:gap-5">
 
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl overflow-hidden">
+        <header className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl overflow-hidden shrink-0">
               <svg viewBox="0 0 128 128" className="w-full h-full">
                 <rect width="128" height="128" rx="24" fill="#111827" />
                 <g transform="translate(7,0)">
@@ -176,28 +176,28 @@ function App() {
                 </g>
               </svg>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-base-content">Slovenian Dictionary</h1>
-              <p className="text-xs text-base-content/50 font-medium">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-base-content truncate">Slovenian Dictionary</h1>
+              <p className="text-[10px] sm:text-xs text-base-content/50 font-medium">
                 {formsLevel === 'full' ? '2.9M forms indexed' : formsLevel === 'core' ? 'Loading full index...' : 'Offline-first'}
               </p>
             </div>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 sm:gap-1 shrink-0">
             <button
               onClick={() => { setShowFavorites(!showFavorites); setShowHistory(false); }}
-              className={`btn btn-sm btn-ghost ${showFavorites ? 'text-red-500' : 'text-base-content/40'}`}
+              className={`btn btn-xs sm:btn-sm btn-ghost ${showFavorites ? 'text-red-500' : 'text-base-content/40'}`}
               title="Favorites"
             >
-              <Heart size={18} fill={showFavorites ? 'currentColor' : 'none'} />
+              <Heart size={16} fill={showFavorites ? 'currentColor' : 'none'} />
               {favorites.size > 0 && <span className="text-xs">{favorites.size}</span>}
             </button>
             <button
               onClick={() => { setShowHistory(!showHistory); setShowFavorites(false); }}
-              className={`btn btn-sm btn-ghost ${showHistory ? 'text-primary' : 'text-base-content/40'}`}
+              className={`btn btn-xs sm:btn-sm btn-ghost ${showHistory ? 'text-primary' : 'text-base-content/40'}`}
               title="History"
             >
-              <Clock size={18} />
+              <Clock size={16} />
             </button>
           </div>
         </header>
@@ -220,15 +220,15 @@ function App() {
           <>
             {/* Search */}
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-base-content/40 group-focus-within:text-primary transition-colors">
-                <Search size={20} />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4 pointer-events-none text-base-content/40 group-focus-within:text-primary transition-colors">
+                <Search size={18} />
               </div>
               <input
                 type="text"
-                placeholder="Search for a Slovenian word..."
+                placeholder="Search Slovenian..."
                 value={query}
                 onChange={e => { setQuery(e.target.value); setShowFavorites(false); setShowHistory(false); }}
-                className="input w-full pl-12 h-14 text-lg bg-base-100 border-transparent focus:border-primary focus:outline-none placeholder:text-base-content/30 rounded-2xl transition-all font-medium"
+                className="input w-full pl-10 sm:pl-12 h-11 sm:h-14 text-base sm:text-lg bg-base-100 border-transparent focus:border-primary focus:outline-none placeholder:text-base-content/30 rounded-xl sm:rounded-2xl transition-all font-medium"
                 autoFocus
                 spellCheck={false}
               />
@@ -323,11 +323,11 @@ function WordCard({
 }) {
   return (
     <div className="card bg-base-100 overflow-hidden border border-base-200 hover:border-primary/30 transition-colors">
-      <div className="card-body p-5">
+      <div className="card-body p-3 sm:p-5">
 
         {/* Form → Lemma indicator */}
         {matchedForm && (
-          <div className="flex items-center gap-2 mb-1 text-sm text-base-content/50">
+          <div className="flex items-center gap-1.5 mb-1 text-xs sm:text-sm text-base-content/50">
             <span className="font-medium italic">{matchedForm}</span>
             <ArrowRight size={12} />
             <span className="font-semibold text-primary">{result.word}</span>
@@ -335,11 +335,11 @@ function WordCard({
         )}
 
         {/* Header: Word + Actions */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-2xl font-bold text-base-content">{result.word}</h2>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-base-content break-all">{result.word}</h2>
             {result.accent && result.accent !== result.word && (
-              <span className="text-lg text-primary/70 font-medium">{result.accent}</span>
+              <span className="text-base sm:text-lg text-primary/70 font-medium">{result.accent}</span>
             )}
             {result.partOfSpeech && (
               <span className="badge badge-primary badge-outline font-semibold tracking-wide uppercase text-[10px] px-2 py-0.5">
