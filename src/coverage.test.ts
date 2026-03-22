@@ -57,6 +57,7 @@ const BOOK_TITLES: Record<string, string> = {
   'cankar_za_narodov_blagor.txt': 'Ivan Cankar - Za narodov blagor',
   'jurcic_deseti_brat.txt': 'Josip Jurčič - Deseti brat',
   'trdina_bahovi_huzarji.txt': 'Janez Trdina - Bahovi huzarji in Iliri',
+  'milcinski_butalci.txt': 'Fran Milčinski - Butalci',
 };
 
 beforeAll(() => {
@@ -98,8 +99,8 @@ describe('Dictionary data integrity', () => {
 });
 
 describe('Book text extraction', () => {
-  it('all 4 books loaded', () => {
-    expect(books.length).toBe(4);
+  it('all 5 books loaded', () => {
+    expect(books.length).toBe(5);
   });
 
   it.each([
@@ -107,6 +108,7 @@ describe('Book text extraction', () => {
     ['cankar_za_narodov_blagor.txt', 2000],
     ['jurcic_deseti_brat.txt', 5000],
     ['trdina_bahovi_huzarji.txt', 5000],
+    ['milcinski_butalci.txt', 2000],
   ])('%s has at least %d unique words', (filename, minWords) => {
     const book = books.find(b => b.filename === filename)!;
     expect(book.words.size).toBeGreaterThanOrEqual(minWords);
