@@ -228,7 +228,7 @@ function App() {
                 placeholder="Search for a Slovenian word..."
                 value={query}
                 onChange={e => { setQuery(e.target.value); setShowFavorites(false); setShowHistory(false); }}
-                className="input w-full pl-12 h-14 text-lg bg-base-100 border-transparent focus:border-primary focus:ring-4 focus:ring-primary/20 placeholder:text-base-content/30 rounded-2xl transition-all font-medium"
+                className="input w-full pl-12 h-14 text-lg bg-base-100 border-transparent focus:border-primary focus:outline-none placeholder:text-base-content/30 rounded-2xl transition-all font-medium"
                 autoFocus
                 spellCheck={false}
               />
