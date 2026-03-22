@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   loadDictionary, loadCoreForms, loadFullFormsWorker, loadExtraLemmas,
   getFavorites, toggleFavorite, getHistory, addToHistory,
@@ -14,11 +14,22 @@ interface SearchResult {
   matchedForm?: string;
 }
 
+const strip = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 function App() {
   const [dictionary, setDictionary] = useState<WordEntry[]>([]);
   const [dictIndex, setDictIndex] = useState<Map<string, WordEntry>>(new Map());
+  const [strippedWords, setStrippedWords] = useState<string[]>([]);
   const [forms, setForms] = useState<FormsMap>({});
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleQueryChange = useCallback((value: string) => {
+    setQuery(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedQuery(value), 150);
+  }, []);
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [formsLevel, setFormsLevel] = useState<'none' | 'core' | 'full'>('none');
@@ -45,6 +56,7 @@ function App() {
           idx.set(entry.word.toLowerCase(), entry);
         }
         setDictIndex(idx);
+        setStrippedWords(data.map(e => strip(e.word.toLowerCase())));
 
         setForms(coreForms);
         setFormsLevel('core');
@@ -60,10 +72,10 @@ function App() {
             const existing = new Set(prev.map(e => e.word.toLowerCase()));
             const newEntries = extraLemmas.filter(e => !existing.has(e.word.toLowerCase()));
             const merged = [...prev, ...newEntries].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
-            // Update index
             const idx = new Map<string, WordEntry>();
             for (const entry of merged) idx.set(entry.word.toLowerCase(), entry);
             setDictIndex(idx);
+            setStrippedWords(merged.map(e => strip(e.word.toLowerCase())));
             return merged;
           });
           setFormsLevel('full');
@@ -86,6 +98,7 @@ function App() {
 
   const handleWordClick = useCallback(async (word: string) => {
     setQuery(word);
+    setDebouncedQuery(word);
     setShowFavorites(false);
     setShowHistory(false);
     const updated = await addToHistory(word);
@@ -102,12 +115,10 @@ function App() {
   }, []);
 
   const searchResults = useMemo((): SearchResult[] => {
-    if (!query) return [];
-    const q = query.toLowerCase().trim();
+    if (!debouncedQuery) return [];
+    const q = debouncedQuery.toLowerCase().trim();
     if (q.length < 1) return [];
 
-    // Strip diacritics: ž→z, š→s, č→c, etc.
-    const strip = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const qStripped = strip(q);
     const hasDiacritics = q !== qStripped;
 
@@ -134,49 +145,49 @@ function App() {
     }
 
     // 3. Prefix match (exact diacritics first, then stripped)
-    for (const entry of dictionary) {
+    for (let i = 0; i < dictionary.length; i++) {
       if (results.length >= 50) break;
-      const w = entry.word.toLowerCase();
+      const w = dictionary[i].word.toLowerCase();
       if (!seen.has(w) && w.startsWith(q)) {
         seen.add(w);
-        results.push({ entry });
+        results.push({ entry: dictionary[i] });
       }
     }
 
-    // 3b. Diacritics-insensitive prefix match
-    if (hasDiacritics === false && results.length < 50) {
-      for (const entry of dictionary) {
+    // 3b. Diacritics-insensitive prefix match (uses precomputed stripped words)
+    if (!hasDiacritics && results.length < 50) {
+      for (let i = 0; i < dictionary.length; i++) {
         if (results.length >= 50) break;
-        const w = entry.word.toLowerCase();
-        if (!seen.has(w) && strip(w).startsWith(qStripped)) {
+        const w = dictionary[i].word.toLowerCase();
+        if (!seen.has(w) && strippedWords[i]?.startsWith(qStripped)) {
           seen.add(w);
-          results.push({ entry });
+          results.push({ entry: dictionary[i] });
         }
       }
     }
 
-    // 4. Substring match
+    // 4. Substring match (uses precomputed stripped words)
     if (results.length < 50 && q.length >= 2) {
-      for (const entry of dictionary) {
+      for (let i = 0; i < dictionary.length; i++) {
         if (results.length >= 50) break;
-        const w = entry.word.toLowerCase();
-        if (!seen.has(w) && (w.includes(q) || strip(w).includes(qStripped))) {
+        const w = dictionary[i].word.toLowerCase();
+        if (!seen.has(w) && (w.includes(q) || strippedWords[i]?.includes(qStripped))) {
           seen.add(w);
-          results.push({ entry });
+          results.push({ entry: dictionary[i] });
         }
       }
     }
 
     return results;
-  }, [query, dictionary, dictIndex, forms]);
+  }, [debouncedQuery, dictionary, dictIndex, forms, strippedWords]);
 
   // Track history when results change
   useEffect(() => {
-    if (searchResults.length > 0 && query.length >= 2) {
+    if (searchResults.length > 0 && debouncedQuery.length >= 2) {
       const topWord = searchResults[0].entry.word;
       addToHistory(topWord).then(setHistory);
     }
-  }, [searchResults, query]);
+  }, [searchResults, debouncedQuery]);
 
   const favoriteEntries = useMemo(() => {
     return dictionary.filter(e => favorites.has(e.word));
@@ -258,7 +269,7 @@ function App() {
                 type="text"
                 placeholder="Search Slovenian..."
                 value={query}
-                onChange={e => { setQuery(e.target.value); setShowFavorites(false); setShowHistory(false); }}
+                onChange={e => { handleQueryChange(e.target.value); setShowFavorites(false); setShowHistory(false); }}
                 className="input w-full pl-10 sm:pl-12 h-11 sm:h-14 text-base sm:text-lg bg-base-100 border-transparent focus:border-primary focus:outline-none placeholder:text-base-content/30 rounded-xl sm:rounded-2xl transition-all font-medium"
                 autoFocus
                 spellCheck={false}
@@ -314,9 +325,9 @@ function App() {
             {/* Results */}
             {!showFavorites && !showHistory && (
               <div className="flex flex-col gap-4">
-                {query && searchResults.length === 0 && (
+                {debouncedQuery && searchResults.length === 0 && (
                   <div className="text-center py-12 text-base-content/40">
-                    <p className="text-lg">No results found for &ldquo;{query}&rdquo;.</p>
+                    <p className="text-lg">No results found for &ldquo;{debouncedQuery}&rdquo;.</p>
                   </div>
                 )}
 

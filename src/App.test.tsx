@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 import type { WordEntry } from './db';
@@ -51,44 +51,36 @@ describe('App', () => {
 
   it('shows results matching the query', async () => {
     render(<App />);
-    const input = await screen.findByPlaceholderText(
-      'Search Slovenian...'
-    );
+    const input = await screen.findByPlaceholderText('Search Slovenian...');
     await userEvent.type(input, 'hiš');
 
-    expect(screen.getByText('hiša')).toBeInTheDocument();
+    expect(await screen.findByText('hiša')).toBeInTheDocument();
     expect(screen.queryByText('miza')).not.toBeInTheDocument();
   });
 
   it('resolves inflected form to lemma', async () => {
     render(<App />);
-    const input = await screen.findByPlaceholderText(
-      'Search Slovenian...'
-    );
+    const input = await screen.findByPlaceholderText('Search Slovenian...');
     await userEvent.type(input, 'govoril');
 
-    // Should show the lemma entry with the form->lemma indicator
-    // "govoriti" appears in both the form badge and the card title
+    expect(await screen.findByText('to speak')).toBeInTheDocument();
     expect(screen.getAllByText('govoriti').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('govoril')).toBeInTheDocument(); // the matched form
-    expect(screen.getByText('to speak')).toBeInTheDocument();
+    expect(screen.getByText('govoril')).toBeInTheDocument();
   });
 
   it('shows no results message for unmatched query', async () => {
     render(<App />);
-    const input = await screen.findByPlaceholderText(
-      'Search Slovenian...'
-    );
+    const input = await screen.findByPlaceholderText('Search Slovenian...');
     await userEvent.type(input, 'zzzzz');
-    expect(screen.getByText(/no results found/i)).toBeInTheDocument();
+
+    expect(await screen.findByText(/no results found/i)).toBeInTheDocument();
   });
 
   it('displays definitions when present', async () => {
     render(<App />);
-    const input = await screen.findByPlaceholderText(
-      'Search Slovenian...'
-    );
+    const input = await screen.findByPlaceholderText('Search Slovenian...');
     await userEvent.type(input, 'knjiga');
-    expect(screen.getByText('book')).toBeInTheDocument();
+
+    expect(await screen.findByText('book')).toBeInTheDocument();
   });
 });

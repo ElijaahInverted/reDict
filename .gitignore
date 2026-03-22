@@ -29,6 +29,9 @@ test-data/Sloleks.3.1.zip
 test-data/sloleks-form-to-lemma.json
 test-data/sloleks-pronunciation.json
 test-data/kaikki-slovene.jsonl
+test-data/kaikki-sl-wiktionary.jsonl
+test-data/slwiktionary-articles.xml.bz2
+test-data/slwiktionary-definitions.json
 test-data/analysis.json
 
 # Claude Code
