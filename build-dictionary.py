@@ -65,6 +65,29 @@ def build_kaikki_dict():
             entry['examples'] = rec['examples'][:3]
         dictionary.append(entry)
 
+    # Resolve "alternative form of X" / "form of X" cross-references
+    import re
+    alt_pattern = re.compile(r'^(?:alternative |obsolete |archaic )?form of ["\u201c]?(\w+)', re.IGNORECASE)
+    dict_by_key = {rec['word'].lower(): rec for rec in entries_map.values()}
+
+    for entry in dictionary:
+        defs = entry.get('definitions', [])
+        if len(defs) == 1:
+            m = alt_pattern.match(defs[0])
+            if m:
+                # Strip diacritics for lookup
+                ref = m.group(1).lower()
+                # Try with and without accents
+                target = dict_by_key.get(ref)
+                if not target:
+                    # Strip combining characters for accented refs like búkev
+                    import unicodedata
+                    stripped = unicodedata.normalize('NFD', ref)
+                    stripped = ''.join(c for c in stripped if unicodedata.category(c) != 'Mn')
+                    target = dict_by_key.get(stripped)
+                if target and target['definitions']:
+                    entry['definitions'] = defs + [d for d in target['definitions'] if d not in defs]
+
     dictionary.sort(key=lambda e: e['word'].lower())
     return dictionary
 
