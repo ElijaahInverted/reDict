@@ -55,12 +55,12 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /slovenian_forms_full\.json\.gz$/i,
+            urlPattern: /slovenian_(forms_full|lemmas_extra)\.json\.gz$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'dictionary-full-cache',
               expiration: {
-                maxEntries: 1,
+                maxEntries: 5,
                 maxAgeSeconds: 30 * 24 * 60 * 60,
               },
               cacheableResponse: { statuses: [0, 200] },

@@ -16,7 +16,9 @@ from collections import defaultdict
 KAIKKI_INPUT = 'test-data/kaikki-slovene.jsonl'
 SLOLEKS_INPUT = 'test-data/sloleks-form-to-lemma.json'
 SLOLEKS_PRONUN = 'test-data/sloleks-pronunciation.json'
+SL_WIKTIONARY_INPUT = 'test-data/slwiktionary-definitions.json'
 DICT_OUTPUT = 'public/slovenian_dictionary.json'
+SLOLEKS_LEMMAS_OUTPUT = 'public/slovenian_lemmas_extra.json.gz'
 CORE_FORMS_OUTPUT = 'public/slovenian_forms_core.json'
 FULL_FORMS_OUTPUT = 'public/slovenian_forms_full.json.gz'
 
@@ -97,11 +99,13 @@ def main():
     dictionary = build_kaikki_dict()
     defined_lemmas = {e['word'].lower() for e in dictionary}
 
-    print('2. Loading Sloleks data...')
+    print('2. Loading Sloleks + sl.wiktionary data...')
     with open(SLOLEKS_INPUT, 'r', encoding='utf-8') as f:
         all_forms = json.load(f)
     with open(SLOLEKS_PRONUN, 'r', encoding='utf-8') as f:
         pronunciation = json.load(f)
+    with open(SL_WIKTIONARY_INPUT, 'r', encoding='utf-8') as f:
+        sl_definitions = json.load(f)
 
     # Enrich dictionary entries with pronunciation from Sloleks
     pron_count = 0
@@ -115,17 +119,60 @@ def main():
                 entry['ipa'] = pron['i']
             pron_count += 1
 
+    # Enrich ALL entries with Slovenian definitions from sl.wiktionary
+    sl_def_count = 0
+    for entry in dictionary:
+        key = entry['word'].lower()
+        sl_defs = sl_definitions.get(key)
+        if sl_defs:
+            entry['definitionsSl'] = sl_defs[:5]
+            sl_def_count += 1
+    print(f'   {sl_def_count} entries enriched with Slovenian definitions')
+
+    # Add ALL Sloleks lemmas that aren't already in dictionary
+    sloleks_lemmas = set(all_forms.values())
+    added_count = 0
+    sl_only_defs = 0
+    for lemma in sorted(sloleks_lemmas):
+        if lemma not in defined_lemmas:
+            entry = {'word': lemma}
+            pron = pronunciation.get(lemma)
+            if pron:
+                if 'a' in pron:
+                    entry['accent'] = pron['a']
+                if 'i' in pron:
+                    entry['ipa'] = pron['i']
+                pron_count += 1
+            sl_defs = sl_definitions.get(lemma)
+            if sl_defs:
+                entry['definitionsSl'] = sl_defs[:5]
+                sl_only_defs += 1
+            dictionary.append(entry)
+            defined_lemmas.add(lemma)
+            added_count += 1
+    print(f'   Added {added_count} Sloleks-only lemmas ({sl_only_defs} with Slovenian definitions)')
+    dictionary.sort(key=lambda e: e['word'].lower())
+
     # Remove identity mappings (form == lemma)
     all_forms = {k: v for k, v in all_forms.items() if k != v}
 
-    # Split into core (defined) and full
-    core_forms = {k: v for k, v in all_forms.items() if v in defined_lemmas}
+    # Split into core — only forms pointing to lemmas WITH definitions (fast initial load)
+    lemmas_with_defs = {e['word'].lower() for e in dictionary if 'definitions' in e}
+    core_forms = {k: v for k, v in all_forms.items() if v in lemmas_with_defs}
+
+    # Split dictionary: Kaikki entries (instant) vs Sloleks-only (background)
+    kaikki_entries = [e for e in dictionary if 'definitions' in e or 'examples' in e]
+    sloleks_entries = [e for e in dictionary if 'definitions' not in e and 'examples' not in e]
 
     print('3. Writing output files...')
 
-    # Dictionary
+    # Main dictionary (Kaikki entries with definitions — instant load)
     with open(DICT_OUTPUT, 'w', encoding='utf-8') as f:
-        json.dump(dictionary, f, ensure_ascii=False, separators=(',', ':'))
+        json.dump(kaikki_entries, f, ensure_ascii=False, separators=(',', ':'))
+
+    # Extra lemmas (Sloleks-only, no definitions — background load, gzipped)
+    with gzip.open(SLOLEKS_LEMMAS_OUTPUT, 'wt', encoding='utf-8', compresslevel=9) as f:
+        json.dump(sloleks_entries, f, ensure_ascii=False, separators=(',', ':'))
 
     # Core forms (small, loads immediately)
     with open(CORE_FORMS_OUTPUT, 'w', encoding='utf-8') as f:
@@ -137,14 +184,16 @@ def main():
 
     # Report
     dict_kb = os.path.getsize(DICT_OUTPUT) / 1024
+    extra_mb = os.path.getsize(SLOLEKS_LEMMAS_OUTPUT) / (1024 * 1024)
     core_kb = os.path.getsize(CORE_FORMS_OUTPUT) / 1024
     full_mb = os.path.getsize(FULL_FORMS_OUTPUT) / (1024 * 1024)
-    with_defs = sum(1 for e in dictionary if 'definitions' in e)
 
     print(f'\n=== Build Complete ===')
-    print(f'Dictionary:  {len(dictionary)} entries ({dict_kb:.0f} KB), {with_defs} with definitions, {pron_count} with pronunciation')
+    print(f'Dictionary:  {len(kaikki_entries)} entries ({dict_kb:.0f} KB) with definitions — instant load')
+    print(f'Extra lemmas: {len(sloleks_entries)} entries ({extra_mb:.1f} MB gzipped) — background load')
     print(f'Core forms:  {len(core_forms)} forms ({core_kb:.0f} KB) — instant load')
     print(f'Full forms:  {len(all_forms)} forms ({full_mb:.1f} MB gzipped) — background load')
+    print(f'Total entries: {len(dictionary)}, {pron_count} with pronunciation')
     print(f'Initial payload: {(dict_kb + core_kb)/1024:.1f} MB')
 
 

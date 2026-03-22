@@ -6,6 +6,7 @@ export const WordSchema = z.object({
   partOfSpeech: z.string().optional(),
   inflection: z.string().optional(),
   definitions: z.array(z.string()).optional(),
+  definitionsSl: z.array(z.string()).optional(),
   examples: z.array(z.string()).optional(),
   accent: z.string().optional(),
   ipa: z.string().optional(),
@@ -17,6 +18,7 @@ export type WordEntry = z.infer<typeof WordSchema>;
 export type FormsMap = Record<string, string>;
 
 const DICT_KEY = 'slo_dict_data';
+const EXTRA_LEMMAS_KEY = 'slo_extra_lemmas';
 const CORE_FORMS_KEY = 'slo_forms_core';
 const FULL_FORMS_KEY = 'slo_forms_full';
 const FAVORITES_KEY = 'slo_favorites';
@@ -116,6 +118,33 @@ export function loadFullFormsWorker(): Promise<FormsMap> {
     };
     worker.postMessage('load');
   });
+}
+
+export async function loadExtraLemmas(): Promise<WordEntry[]> {
+  const cached = await localforage.getItem<WordEntry[]>(EXTRA_LEMMAS_KEY);
+  if (cached) {
+    console.log('Loaded extra lemmas from IndexedDB.');
+    return cached;
+  }
+
+  console.log('Fetching extra lemmas (gzipped)...');
+  const response = await fetch('/slovenian_lemmas_extra.json.gz');
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  const contentType = response.headers.get('content-type') || '';
+  let data: WordEntry[];
+
+  if (contentType.includes('json')) {
+    data = await response.json();
+  } else {
+    const ds = new DecompressionStream('gzip');
+    const decompressed = response.body!.pipeThrough(ds);
+    data = await new Response(decompressed).json();
+  }
+
+  await localforage.setItem(EXTRA_LEMMAS_KEY, data);
+  console.log(`Cached ${data.length} extra lemmas.`);
+  return data;
 }
 
 // --- Favorites ---

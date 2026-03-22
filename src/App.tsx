@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  loadDictionary, loadCoreForms, loadFullFormsWorker,
+  loadDictionary, loadCoreForms, loadFullFormsWorker, loadExtraLemmas,
   getFavorites, toggleFavorite, getHistory, addToHistory,
   type WordEntry, type FormsMap
 } from './db';
@@ -50,11 +50,25 @@ function App() {
         setFormsLevel('core');
         setStatus('ready');
 
-        loadFullFormsWorker().then(fullForms => {
+        // Background load: full forms + extra lemmas
+        Promise.all([
+          loadFullFormsWorker(),
+          loadExtraLemmas(),
+        ]).then(([fullForms, extraLemmas]) => {
           setForms(fullForms);
+          setDictionary(prev => {
+            const existing = new Set(prev.map(e => e.word.toLowerCase()));
+            const newEntries = extraLemmas.filter(e => !existing.has(e.word.toLowerCase()));
+            const merged = [...prev, ...newEntries].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
+            // Update index
+            const idx = new Map<string, WordEntry>();
+            for (const entry of merged) idx.set(entry.word.toLowerCase(), entry);
+            setDictIndex(idx);
+            return merged;
+          });
           setFormsLevel('full');
         }).catch(err => {
-          console.warn('Full forms load failed (core still active):', err);
+          console.warn('Background load failed (core still active):', err);
         });
       } catch (err: unknown) {
         console.error(err);
@@ -392,7 +406,7 @@ function WordCard({
           <p className="text-sm text-base-content/50 italic">{result.inflection}</p>
         )}
 
-        {/* Definitions */}
+        {/* Definitions (English) */}
         {result.definitions && result.definitions.length > 0 && (
           <>
             <div className="divider my-1 opacity-20"></div>
@@ -401,6 +415,22 @@ function WordCard({
                 <div key={i} className="flex gap-2.5 text-base-content/80">
                   <span className="text-primary font-bold text-sm mt-0.5">{i + 1}.</span>
                   <p className="text-[15px] leading-relaxed">{def}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Definitions (Slovenian) */}
+        {result.definitionsSl && result.definitionsSl.length > 0 && (
+          <>
+            <div className="divider my-1 opacity-20"></div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-base-content/40 font-medium uppercase tracking-wider">SL</span>
+              {result.definitionsSl.map((def, i) => (
+                <div key={i} className="flex gap-2.5 text-base-content/60">
+                  <span className="text-base-content/30 font-bold text-sm mt-0.5">{i + 1}.</span>
+                  <p className="text-[15px] leading-relaxed italic">{def}</p>
                 </div>
               ))}
             </div>

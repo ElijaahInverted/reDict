@@ -25,6 +25,7 @@ vi.mock('./db', () => ({
   loadCoreForms: vi.fn(() => Promise.resolve(mockCoreForms)),
   loadFullForms: vi.fn(() => Promise.resolve(mockCoreForms)),
   loadFullFormsWorker: vi.fn(() => Promise.resolve(mockCoreForms)),
+  loadExtraLemmas: vi.fn(() => Promise.resolve([])),
   getFavorites: vi.fn(() => Promise.resolve(new Set<string>())),
   toggleFavorite: vi.fn(() => Promise.resolve(new Set<string>())),
   getHistory: vi.fn(() => Promise.resolve([])),
