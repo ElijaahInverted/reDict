@@ -1,0 +1,35 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Large source data (rebuild with parse-sloleks.py + build-dictionary.py)
+test-data/Sloleks.3.1/
+test-data/Sloleks.3.1.zip
+test-data/sloleks-form-to-lemma.json
+test-data/sloleks-pronunciation.json
+test-data/kaikki-slovene.jsonl
+test-data/analysis.json
+
+# Claude Code
+.claude/
